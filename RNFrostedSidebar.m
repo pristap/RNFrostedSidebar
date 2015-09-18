@@ -174,6 +174,7 @@
 @interface RNCalloutItemView : UIView
 
 @property (nonatomic, strong) UIImageView *imageView;
+@property (nonatomic, strong) UILabel *titleLabel;
 @property (nonatomic, assign) NSInteger itemIndex;
 @property (nonatomic, strong) UIColor *originalBackgroundColor;
 
@@ -187,6 +188,11 @@
         _imageView.backgroundColor = [UIColor clearColor];
         _imageView.contentMode = UIViewContentModeScaleAspectFit;
         [self addSubview:_imageView];
+        _titleLabel = [[UILabel alloc] init];
+        _titleLabel.textColor = [UIColor whiteColor];
+        _titleLabel.font = [UIFont systemFontOfSize:[UIFont smallSystemFontSize] weight:UIFontWeightThin];
+        _titleLabel.textAlignment = NSTextAlignmentCenter;
+        [self addSubview:_titleLabel];
     }
     return self;
 }
@@ -195,8 +201,21 @@
     [super layoutSubviews];
     
     CGFloat inset = self.bounds.size.height/2;
-    self.imageView.frame = CGRectMake(0, 0, inset, inset);
-    self.imageView.center = CGPointMake(inset, inset);
+    _imageView.frame = CGRectMake(0, 0, inset, inset);
+    _imageView.center = CGPointMake(inset, inset);
+    
+    if (_titleLabel.text) {
+        
+        CGFloat ratioDiff = self.frame.size.height * 2/3.0f - _imageView.frame.size.height;
+        _imageView.center = CGPointMake(inset, inset - 0.5f * ratioDiff);
+        
+        CGRect rect = self.frame;
+        NSLog(@"Height:%f", rect.size.height);
+        rect.origin.x = 0;
+        rect.size.height = ratioDiff;
+        rect.origin.y = CGRectGetMaxY(self.imageView.frame);
+        _titleLabel.frame = rect;
+    }
 }
 
 - (void)setOriginalBackgroundColor:(UIColor *)originalBackgroundColor {
@@ -242,6 +261,7 @@
 @property (nonatomic, strong) UIImageView *blurView;
 @property (nonatomic, strong) UITapGestureRecognizer *tapGesture;
 @property (nonatomic, strong) NSArray *images;
+@property (nonatomic, strong) NSArray *titles;
 @property (nonatomic, strong) NSArray *borderColors;
 @property (nonatomic, strong) NSMutableArray *itemViews;
 @property (nonatomic, strong) NSMutableIndexSet *selectedIndices;
@@ -254,6 +274,17 @@ static RNFrostedSidebar *rn_frostedMenu;
 
 + (instancetype)visibleSidebar {
     return rn_frostedMenu;
+}
+
+- (instancetype)initWithImages:(NSArray *)images titles:(NSArray *)titles selectedIndices:(NSIndexSet *)selectedIndices borderColors:(NSArray *)colors {
+    
+    if (titles) {
+        NSAssert([titles count] == [images count], @"Border color count must match images count. If you want a blank border, use [UIColor clearColor].");
+    }
+    
+    _titles = titles;
+    
+    return [self initWithImages:images selectedIndices:selectedIndices borderColors:colors];
 }
 
 - (instancetype)initWithImages:(NSArray *)images selectedIndices:(NSIndexSet *)selectedIndices borderColors:(NSArray *)colors {
@@ -288,6 +319,9 @@ static RNFrostedSidebar *rn_frostedMenu;
             view.itemIndex = idx;
             view.clipsToBounds = YES;
             view.imageView.image = image;
+            if (_titles) {
+                view.titleLabel.text = [self.titles objectAtIndex:idx];
+            }
             [_contentView addSubview:view];
             
             [_itemViews addObject:view];
@@ -329,7 +363,7 @@ static RNFrostedSidebar *rn_frostedMenu;
     return YES;
 }
 
-- (NSUInteger)supportedInterfaceOrientations {
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
     return UIInterfaceOrientationMaskAll;
 }
 
